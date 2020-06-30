@@ -6,7 +6,8 @@ from datetime import datetime
 
 #connect to database so we can add the songs
 db = dataset.connect('sqlite:///songlist.db')
-
+#https://www.last.fm/api/account/create
+key = ""
 
 tagquestion = input('do you want to grab genre tags along with your scrobbler history? (takes about 2x as long) y/n: ')
 if tagquestion == 'y':
@@ -26,11 +27,9 @@ def get_recent_tracks(page):
 	#refer to last.fm's API documentation, there are tons of different methods you can use
 	method = "user.getrecenttracks"
 	user = userquestion
-	#https://www.last.fm/api/account/create
-	key = "e38cc7822bd7476fe4083e36ee69748e"
 	#exclude data_format if you want to parse XML instead
 	data_format = "json"
-	#extended gives the date it was scrobbled, if the user has loved the track, etc. 
+	#extended gives the date it was scrobbled, if the user has loved the track, etc.
 	extended = '1'
 	limit = '200'
 	#check if page number is specified. if not, get the initial data. this is used to find the total # of pages there are, total # of tracks scrobbled, etc.
@@ -64,11 +63,9 @@ def get_tags(artist,track):
 	base_url = "http://ws.audioscrobbler.com/2.0/"
 	#refer to last.fm's API documentation, there are tons of different methods you can use
 	method = "track.getTopTags"
-	#https://www.last.fm/api/account/create
-	key = "e38cc7822bd7476fe4083e36ee69748e"
 	#exclude data_format if you want to parse XML instead
 	data_format = "json"
-	#extended gives the date it was scrobbled, if the user has loved the track, etc. 
+	#extended gives the date it was scrobbled, if the user has loved the track, etc.
 	payload = {"method": method,
 			   "artist": artist,
 			   "api_key": key,
@@ -79,7 +76,7 @@ def get_tags(artist,track):
 	tagr = requests.get(base_url, payload)
 	tagdata = tagr.json()
 	songtags = []
-	
+
 	for x in range(0,5):
 		try:
 			songtags.append(tagdata['toptags']['tag'][x]['name'])
@@ -92,7 +89,7 @@ def get_history():
 	pages = data['recenttracks']['@attr']['totalPages']
 	songs = data['recenttracks']['@attr']['total']
 	#add current page to database: to keep track of where it was stopped at
-	
+
 	print (pages,"pages total", songs,"songs scrobbled")
 	try:
 		pages = pagetable.find_one(pages)["pages"]
@@ -101,15 +98,15 @@ def get_history():
 		print ("First run: grabbing all pages")
 	for page in range (int(pages),0,-1):
 		try:
-			#reason I step it backwards from highest to lowest is because I want the item ID's in the database to look nice :) 
+			#reason I step it backwards from highest to lowest is because I want the item ID's in the database to look nice :)
 			#1st item in database is the oldest song in the scrobble history
 			data = get_recent_tracks(page)
 			print ("Checking page {}...".format(page))
 			items = (data['recenttracks']['track'])
 			inlist = int(len(items))
 			#last.fm uses 1 as first number instead of 0
-			print(inlist - 1 ,"tracks on this page") 
-			
+			print(inlist - 1 ,"tracks on this page")
+
 			#same reason here
 			for x  in range(inlist-1, 0,-1):
 				#print('checking song', x)
@@ -149,6 +146,5 @@ running = True
 while running:
 	get_history()
 	print('COMPLETED: update at {}'.format(datetime.now()))
-# update every 30 minutes 
+# update every 30 minutes
 	sleep(1800)
-
